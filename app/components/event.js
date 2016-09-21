@@ -8,33 +8,95 @@ import {
   TouchableHighlight,
   TouchableOpacity,
   Alert,
+  Dimensions,
 } from 'react-native';
+import { fetchAll, fetchOne, fetchRSVPs } from '../data/fetcher';
 
-const dummyData = [{"created":1472647157000,"duration":16200000,"id":"233763008","name":"React Native HackNight","status":"upcoming","time":1474471800000,"updated":1474394623000,"utc_offset":7200000,"waitlist_count":0,"yes_rsvp_count":27,"venue":{"id":24758572,"name":"Leo Innovation Lab","lat":55.67886734008789,"lon":12.577825546264648,"repinned":false,"address_1":"Niels Hemmingsens Gade 1","city":"Copenhagen","country":"dk","localized_country_name":"Denmark"},"group":{"created":1462340695000,"name":"React Native CPH","id":19914310,"join_mode":"open","lat":55.68000030517578,"lon":12.569999694824219,"urlname":"React-Native-CPH","who":"Members"},"link":"http://www.meetup.com/React-Native-CPH/events/233763008/","description":"<p>This time we will get our hands dirty (and happy!) with React Native. Everyone bring your computers and lets form teams to see what we can create in just one night :-)</p> <p>It is best if everyone has at least some minimum experience with running a Hello World React Native app or similar, check out these ressources to get started:</p> <p>Setup: <a href=\"https://facebook.github.io/react-native/docs/getting-started.html#content\"><a href=\"https://facebook.github.io/react-native/docs/getting-started.html#content\" class=\"linkified\">https://facebook.github.io/react-native/docs/getting-started.html#content</a></a><br/>Hello World: <a href=\"https://facebook.github.io/react-native/docs/tutorial.html\"><a href=\"https://facebook.github.io/react-native/docs/tutorial.html\" class=\"linkified\">https://facebook.github.io/react-native/docs/tutorial.html</a></a></p> <p>We will be working in teams building an RSVP app with the Meetup.com API. Read more about it here: <a href=\"https://pmadruga.github.io/rncph/\"><a href=\"https://pmadruga.github.io/rncph/\" class=\"linkified\">https://pmadruga.github.io/rncph/</a></a></p> <p>See you on September 21st!</p> ","visibility":"public"},{"created":1472647157000,"duration":16200000,"id":"233763008","name":"React Native HackNight","status":"upcoming","time":1474471800000,"updated":1474394623000,"utc_offset":7200000,"waitlist_count":0,"yes_rsvp_count":27,"venue":{"id":24758572,"name":"Leo Innovation Lab","lat":55.67886734008789,"lon":12.577825546264648,"repinned":false,"address_1":"Niels Hemmingsens Gade 1","city":"Copenhagen","country":"dk","localized_country_name":"Denmark"},"group":{"created":1462340695000,"name":"React Native CPH","id":19914310,"join_mode":"open","lat":55.68000030517578,"lon":12.569999694824219,"urlname":"React-Native-CPH","who":"Members"},"link":"http://www.meetup.com/React-Native-CPH/events/233763008/","description":"<p>This time we will get our hands dirty (and happy!) with React Native. Everyone bring your computers and lets form teams to see what we can create in just one night :-)</p> <p>It is best if everyone has at least some minimum experience with running a Hello World React Native app or similar, check out these ressources to get started:</p> <p>Setup: <a href=\"https://facebook.github.io/react-native/docs/getting-started.html#content\"><a href=\"https://facebook.github.io/react-native/docs/getting-started.html#content\" class=\"linkified\">https://facebook.github.io/react-native/docs/getting-started.html#content</a></a><br/>Hello World: <a href=\"https://facebook.github.io/react-native/docs/tutorial.html\"><a href=\"https://facebook.github.io/react-native/docs/tutorial.html\" class=\"linkified\">https://facebook.github.io/react-native/docs/tutorial.html</a></a></p> <p>We will be working in teams building an RSVP app with the Meetup.com API. Read more about it here: <a href=\"https://pmadruga.github.io/rncph/\"><a href=\"https://pmadruga.github.io/rncph/\" class=\"linkified\">https://pmadruga.github.io/rncph/</a></a></p> <p>See you on September 21st!</p> ","visibility":"public"}];
+const { width, height } = Dimensions.get('window');
 
 class Event extends Component {
 	
 	constructor(props) {
 		super(props);
 
+    this.state = {
+      event: null,
+      eventDate: null,
+      rsvps: [],
+    }
 	}
 
+  componentDidMount() {
+    // fetch data about meetup from API instead of dummyData
+    // this.props.eventId
+    fetchOne(this.props.eventId).then((data) => {
+      
+      console.log(data);
+
+      this.setState({
+        event: data,
+        eventDate: new Date(data.time),
+      })
+
+      fetchRSVPs(this.props.eventId).then((rsvpdata) => {
+        console.log(rsvpdata)
+        this.setState({
+          rsvps: rsvpdata,
+        })
+      });
+    });
+
+
+  }
+
   render() {
-    return (
-      <View style={styles.container}>
-        <Text>Event!!!!!</Text>
-      </View>
-    );
+    const { event, eventDate, rsvps } = this.state;
+
+    if(!event || !event.venue) {
+      return (
+        <View style={styles.container}><Text>fetching...</Text></View>
+      );
+    }
+    else {
+
+      return (  
+        <View style={styles.container}>
+          <View style={{marginBottom:20}}>
+            <Text style={{fontSize:18,}}>{event.name}</Text>
+            <Text style={{fontSize:10,}}>{eventDate.toString()}</Text>
+          </View>
+          <View style={{flex:1,marginBottom:20, padding:5, backgroundColor: 'rgba(255,0,0,0.1)'}}>
+            <Text>  
+              Venue: {'\n' + event.venue.name + '\n' + event.venue.address_1 + ', ' + event.venue.city}
+            </Text>
+          </View>
+          <View style={{marginBottom:20}}>
+            <Text>{event.yes_rsvp_count.toString() + ' attendees'}</Text>
+            {
+              rsvps.map(r => {
+                return <Text>{r.member.name}</Text>
+              })
+            }
+          </View>
+          <View style={{flex:1,marginBottom:20}}>
+            <Text>{event.description}</Text>
+          </View>
+        </View>
+      );
+
+    }
   }
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: 'flex-start',
+    alignItems: 'flex-start',
     backgroundColor: '#F5FCFF',
     marginTop:70,
+    paddingHorizontal:20,
+    paddingVertical:20,
   },
   welcome: {
     fontSize: 20,
